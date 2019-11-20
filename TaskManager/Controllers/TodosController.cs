@@ -21,17 +21,24 @@ namespace TaskManager.Controllers
 
         [HttpGet("{id}")]
         [Route("[action]/{id}")]
-        public async Task<Todo> GetDetails(int id)
+        public async Task<ActionResult<Todo>> GetDetails(int id)
         {
-            return await _context.Todos
+            Todo todo = await _context.Todos
                 .Where(todo => todo.Id == id)
                 .Include(todo => todo.TagAssignments)
                 .SingleOrDefaultAsync();
+
+            if (todo == null)
+            {
+                return NotFound();
+            }
+
+            return todo;
         }
 
         [HttpGet("{id}")]
         [Route("[action]/{id}")]
-        public async Task<IEnumerable<Todo>> GetByProject(int id)
+        public async Task<ActionResult<IEnumerable<Todo>>> GetByProject(int id)
         {
             return await _context.Todos
                 .Where(todo => todo.ProjectId == id)
@@ -41,7 +48,7 @@ namespace TaskManager.Controllers
 
         [HttpGet("{id}")]
         [Route("[action]/{id}")]
-        public async Task<IEnumerable<Todo>> GetByTag(int id)
+        public async Task<ActionResult<IEnumerable<Todo>>> GetByTag(int id)
         {
             Tag tag = await _context.Tags
                 .Where(t => t.Id == id)
@@ -50,12 +57,17 @@ namespace TaskManager.Controllers
                         .ThenInclude(todo => todo.TagAssignments)
                 .SingleOrDefaultAsync();
 
+            if (tag == null)
+            {
+                return NotFound();
+            }
+
             return tag.TagAssignments.Select(ta => ta.Todo).ToList();
         }
 
         [HttpGet("{date}")]
         [Route("[action]/{date}")]
-        public async Task<IEnumerable<Todo>> GetByDate(DateTime date)
+        public async Task<ActionResult<IEnumerable<Todo>>> GetByDate(DateTime date)
         {
             return await _context.Todos
                 .Where(todo => todo.Date == date)
@@ -66,8 +78,28 @@ namespace TaskManager.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<Todo>> Put(int id, [FromBody]Todo todo)
         {
+            if (id != todo.Id)
+            {
+                return BadRequest();
+            }
+
             _context.Entry(todo).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (await _context.Todos.FindAsync(id) == null)
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             return Ok(todo);
         }
@@ -85,6 +117,12 @@ namespace TaskManager.Controllers
         public async Task<ActionResult<Todo>> Delete(int id)
         {
             Todo todo = await _context.Todos.FindAsync(id);
+
+            if (todo == null)
+            {
+                return NotFound();
+            }
+
             _context.Todos.Remove(todo);
             await _context.SaveChangesAsync();
 

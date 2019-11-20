@@ -20,7 +20,7 @@ namespace TaskManager.Controllers
 
         [HttpGet]
         [Route("[action]")]
-        public async Task<IEnumerable<Project>> GetActive()
+        public async Task<ActionResult<IEnumerable<Project>>> GetActive()
         {
             return await _context.Projects
                 .Where(project => project.IsArchived == false)
@@ -29,7 +29,7 @@ namespace TaskManager.Controllers
 
         [HttpGet]
         [Route("[action]")]
-        public async Task<IEnumerable<Project>> GetArchived()
+        public async Task<ActionResult<IEnumerable<Project>>> GetArchived()
         {
             return await _context.Projects
                 .Where(project => project.IsArchived == true)
@@ -38,20 +38,47 @@ namespace TaskManager.Controllers
 
         [HttpGet("{id}")]
         [Route("[action]/{id}")]
-        public async Task<Project> GetDetails(int id)
+        public async Task<ActionResult<Project>> GetDetails(int id)
         {
-            return await _context.Projects
+            Project project =  await _context.Projects
                 .Include(project => project.Todoes)
                     .ThenInclude(todo => todo.TagAssignments)
                 .Where(project => project.Id == id)
                 .SingleOrDefaultAsync();
+
+            if (project == null)
+            {
+                NotFound();
+            }
+
+            return project;
         }
 
         [HttpPut("{id}")]
         public async Task<ActionResult<Project>> Put(int id, [FromBody]Project project)
         {
+            if (id != project.Id)
+            {
+                return BadRequest();
+            }
+            
             _context.Entry(project).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (await _context.Projects.FindAsync(id) == null)
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             return Ok(project);
         }
@@ -69,6 +96,12 @@ namespace TaskManager.Controllers
         public async Task<ActionResult<Project>> Delete(int id)
         {
             Project project = await _context.Projects.FindAsync(id);
+
+            if (project == null)
+            {
+                return NotFound();
+            }
+
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync();
 

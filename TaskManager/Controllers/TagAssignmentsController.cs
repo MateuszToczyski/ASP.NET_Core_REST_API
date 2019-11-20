@@ -18,11 +18,18 @@ namespace TaskManager.Controllers
         }
 
         [HttpGet("{tagId}/{todoId}")]
-        public async Task<TagAssignment> Get(int tagId, int todoId)
+        public async Task<ActionResult<TagAssignment>> Get(int tagId, int todoId)
         {
-            return await _context.TagAssignments
+            TagAssignment tagAssignment = await _context.TagAssignments
                 .Where(ta => ta.TagId == tagId && ta.TodoId == todoId)
                 .FirstOrDefaultAsync();
+
+            if (tagAssignment == null)
+            {
+                return NotFound();
+            }
+
+            return tagAssignment;
         }
 
         [HttpPost]
@@ -40,6 +47,11 @@ namespace TaskManager.Controllers
             TagAssignment tagAssignment = await _context.TagAssignments
                 .Where(ta => ta.TagId == tagId && ta.TodoId == todoId)
                 .FirstOrDefaultAsync();
+
+            if (tagAssignment == null)
+            {
+                return NotFound();
+            }
 
             _context.TagAssignments.Remove(tagAssignment);
             await _context.SaveChangesAsync();
