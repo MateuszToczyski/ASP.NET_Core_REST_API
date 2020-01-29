@@ -56,22 +56,3 @@ CREATE TABLE [dbo].[TagAssignments](
 		ON DELETE CASCADE
 )
 ```
-
-## NuGet packages
-
-Packages to be installed:
-- Microsoft.EntityFrameworkCore
-- Microsoft.EntityFrameworkCore.SqlServer
-- Microsoft.EntityFrameworkCore.Tools
-- Microsoft.VisualStudio.Web.CodeGeneration.Design (optional)
-- Bricelam.EntityFrameworkCore.Pluralizer (optional)
-- Microsoft.CodeAnalysis.FxCopAnalyzers (optional)
-
-## Scaffolding the database context
-
-To scaffold the database context, run the following command in the Package Manager Console:
-
-```
-Scaffold-DbContext "Server=localhost;Database=TaskManagerDB;Trusted_Connection=True;" Microsoft.EntityFrameworkCore.SqlServer
--OutputDir Models -Schemas "dbo" -Context "TaskManagerContext"
-```
